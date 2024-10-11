@@ -338,6 +338,9 @@ bool PylonCameraImpl<CameraTraitT>::startGrabbing(const PylonCameraParameter& pa
 {
     try
     {
+        std::string const ptp {enablePTP(parameters.enable_ptp_)};
+        ROS_INFO_STREAM("PTP synchronization: " << ptp);
+        
         if ( GenApi::IsAvailable(cam_->ShutterMode) )
         {
             setShutterMode(parameters.shutter_mode_);
@@ -3568,6 +3571,38 @@ int PylonCameraImpl<CameraTraitT>::getChunkCounterValue() {
     } else {
         ROS_ERROR_STREAM("Error while trying to getting the Chunk Counter Value. The connected Camera not supporting this feature");
         return -1;      // No Supported 
+    }
+}
+
+
+template <typename CameraTraitT>
+std::string PylonCameraImpl<CameraTraitT>::enablePTP(const bool& value)
+{
+    try
+    {
+        if (GenApi::IsAvailable(cam_->GevIEEE1588))
+        {
+            cam_->GevIEEE1588.SetValue(value);
+            return "done";
+        }
+        else
+        {
+            if (GenApi::IsAvailable(cam_->PtpEnable))
+            {
+                cam_->PtpEnable.SetValue(value);
+                return "done";
+            }
+            else
+            {
+                ROS_ERROR_STREAM("Error while trying to enable/disable PTP. The connected camera does not support this feature.");
+                return "The connected camera does not support this feature";
+            }
+        }
+    }
+    catch (const GenICam::GenericException &e)
+    {
+        ROS_ERROR_STREAM("An exception while enabling/disabling PTP occurred:" << e.GetDescription());
+        return e.GetDescription();
     }
 }
 

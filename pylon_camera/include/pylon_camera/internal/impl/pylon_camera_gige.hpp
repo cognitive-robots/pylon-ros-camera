@@ -1550,6 +1550,29 @@ std::string PylonGigECamera::setWhiteBalance(const double& redValue, const doubl
     }
 }
 
+template <> 
+std::string PylonGigECamera::enablePTP(const bool& value)
+{
+    try
+    {
+        if (GenApi::IsAvailable(cam_->GevIEEE1588))
+        {
+            cam_->GevIEEE1588.SetValue(value);
+            return "done";
+        }
+        else
+        {
+            ROS_ERROR_STREAM("Error while trying to enable/disable PTP. The connected camera does not support this feature.");
+            return "The connected camera does not support this feature";
+        }
+    }
+    catch (const GenICam::GenericException &e)
+    {
+        ROS_ERROR_STREAM("An exception while enabling/disabling PTP occurred: " << e.GetDescription());
+        return e.GetDescription();
+    }
+}
+
 }  // namespace pylon_camera
 
 #endif  // PYLON_CAMERA_INTERNAL_GIGE_H_

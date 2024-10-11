@@ -303,6 +303,8 @@ public:
 
     virtual int getChunkCounterValue();
 
+    virtual std::string enablePTP(const bool& value) override;
+
 protected:
     typedef typename CameraTraitT::CBaslerInstantCameraT CBaslerInstantCameraT;
     typedef typename CameraTraitT::ExposureAutoEnums ExposureAutoEnums;

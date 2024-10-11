@@ -348,6 +348,11 @@ public:
     */
     int grab_strategy_;
 
+    /**
+     * Enable PTP synchronization
+    */
+    bool enable_ptp_;
+
 
 protected:
     /**

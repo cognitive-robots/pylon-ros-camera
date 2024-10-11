@@ -79,7 +79,8 @@ PylonCameraParameter::PylonCameraParameter() :
         white_balance_ratio_red_(1.0),
         white_balance_ratio_green_(1.0),
         white_balance_ratio_blue_(1.0),
-        white_balance_ratio_given_(false)
+        white_balance_ratio_given_(false),
+        enable_ptp_(false)
 {}
 
 PylonCameraParameter::~PylonCameraParameter()
@@ -302,6 +303,11 @@ void PylonCameraParameter::readFromRosParameterServer(const ros::NodeHandle& nh)
     if ( nh.hasParam("grab_strategy") )
     {
         nh.getParam("grab_strategy", grab_strategy_);
+    }
+
+    if ( nh.hasParam("enable_ptp") )
+    {
+        nh.getParam("enable_ptp", enable_ptp_);
     }
 
     nh.param<bool>("auto_flash", auto_flash_, false);

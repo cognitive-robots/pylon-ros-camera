@@ -150,3 +150,7 @@ grab_strategy : 0
 #  start of image data transmissions from each camera.
 # gige:
 #  frame_transmission_delay: 0
+
+## PTP synchronization was backported from ROS 2 Humble branch in our
+#  fork: https://github.com/cognitive-robots/pylon-ros-camera
+enable_ptp: true

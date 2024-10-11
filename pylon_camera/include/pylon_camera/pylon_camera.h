@@ -950,6 +950,11 @@ public:
     */
     virtual int getChunkCounterValue() = 0;
 
+    /**
+     * Enables/Disables PTP - Applies to: GigE, ace 2 GigE.
+     * @return error message if an error occurred or done message otherwise.
+     */
+    virtual std::string enablePTP(const bool& value) = 0;
 
 
     virtual ~PylonCamera();
