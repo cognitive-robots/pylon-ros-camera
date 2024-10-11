@@ -334,13 +334,46 @@ bool PylonCameraImpl<CameraTraitT>::setupSequencer(const std::vector<float>& exp
 }
 
 template <typename CameraTraitT>
+bool PylonCameraImpl<CameraTraitT>::enableTimestampChunk()
+{
+    // Enable chunks in general
+    if (GenApi::IsWritable(cam_->ChunkModeActive))
+    {
+        cam_->ChunkModeActive.SetValue(true);
+    }
+    else
+    {
+        ROS_ERROR( "The camera doesn't support chunk features, which are needed for timestamps");
+        return false;
+    }
+    // Enable time stamp chunks
+    cam_->ChunkSelector.SetValue(ChunkSelectorEnums::ChunkSelector_Timestamp);
+    cam_->ChunkEnable.SetValue(true);
+    /* As explained in grab(std::vector<uint8_t>& image, ros::Time& stamp) below,
+     * a small GenICam node map is required for accessing chunk data each time.
+     * The node maps are usually created dynamically when StartGrabbing() is called.
+     * To avoid a delay caused by node map creation,
+     * we create a static pool of node maps once before grabbing.
+     */
+    cam_->StaticChunkNodeMapPoolSize = cam_->MaxNumBuffer.GetValue();
+    return true;
+}
+
+template <typename CameraTraitT>
 bool PylonCameraImpl<CameraTraitT>::startGrabbing(const PylonCameraParameter& parameters)
 {
     try
     {
         std::string const ptp {enablePTP(parameters.enable_ptp_)};
         ROS_INFO_STREAM("PTP synchronization: " << ptp);
-        
+
+        if (parameters.fetch_camera_timestamp_) {
+            bool const set_timestamp_chunk {enableTimestampChunk()};
+            if (!set_timestamp_chunk) {
+              ROS_ERROR_STREAM("Failed to set timestamp chunk!");
+            }
+        }
+
         if ( GenApi::IsAvailable(cam_->ShutterMode) )
         {
             setShutterMode(parameters.shutter_mode_);
@@ -378,7 +411,7 @@ bool PylonCameraImpl<CameraTraitT>::startGrabbing(const PylonCameraParameter& pa
         grab_timeout_ = parameters.grab_timeout_; // grab timeout = 500 ms
         trigger_timeout = parameters.trigger_timeout_;
         // grab one image to be sure, that the communication is successful
-        Pylon::CGrabResultPtr grab_result;
+        Pylon::CBaslerUniversalGrabResultPtr grab_result;
         grab(grab_result);
         if ( grab_result.IsValid() )
         {
@@ -399,9 +432,9 @@ bool PylonCameraImpl<CameraTraitT>::startGrabbing(const PylonCameraParameter& pa
 
 // Grab a picture as std::vector of 8bits objects
 template <typename CameraTrait>
-bool PylonCameraImpl<CameraTrait>::grab(std::vector<uint8_t>& image)
+bool PylonCameraImpl<CameraTrait>::grab(std::vector<uint8_t>& image, ros::Time& stamp)
 { 
-    Pylon::CGrabResultPtr ptr_grab_result;
+    Pylon::CBaslerUniversalGrabResultPtr ptr_grab_result;
     if ( !grab(ptr_grab_result) )
     {   
         ROS_ERROR("Error: Grab was not successful");
@@ -427,6 +460,34 @@ bool PylonCameraImpl<CameraTrait>::grab(std::vector<uint8_t>& image)
     }
 
     delete[] shift_array;
+
+    bool use_chunk_timestamp = false;
+    if (getChunkModeActive() == 1) 
+    {
+        std::string success = setChunkSelector(29); // = ChunkSelector_Timestamp
+        if (success.find("done") != std::string::npos && getChunkEnable() == 1) 
+        {
+            use_chunk_timestamp = true;
+        }
+    }
+
+    if (use_chunk_timestamp) {
+        try
+        {
+            if (!ptr_grab_result->ChunkTimestamp.IsReadable())
+            {
+                ROS_WARN_STREAM("Error while trying to get the chunk timestamp. The connected camera may not support this feature");
+            }
+            else
+            {
+                stamp.fromNSec(static_cast<uint64_t>(ptr_grab_result->ChunkTimestamp.GetValue()));
+            }
+        }
+        catch (const GenICam::GenericException &e)
+        {
+            ROS_WARN_STREAM("An exception while getting the chunk timestamp occurred: " << e.GetDescription());
+        }
+    }
     
     if ( !is_ready_ )
         is_ready_ = true;
@@ -443,7 +504,7 @@ bool PylonCameraImpl<CameraTrait>::grab(uint8_t* image)
         return false;
     }
 
-    Pylon::CGrabResultPtr ptr_grab_result;
+    Pylon::CBaslerUniversalGrabResultPtr ptr_grab_result;
     if ( !grab(ptr_grab_result) )
     {   
         ROS_ERROR("Error: Grab was not successful");
@@ -472,7 +533,7 @@ bool PylonCameraImpl<CameraTrait>::grab(uint8_t* image)
 
 // Lowest level grab function called by the other grab functions
 template <typename CameraTrait>
-bool PylonCameraImpl<CameraTrait>::grab(Pylon::CGrabResultPtr& grab_result)
+bool PylonCameraImpl<CameraTrait>::grab(Pylon::CBaslerUniversalGrabResultPtr& grab_result)
 {   
 
      // If camera is not grabbing, don't grab

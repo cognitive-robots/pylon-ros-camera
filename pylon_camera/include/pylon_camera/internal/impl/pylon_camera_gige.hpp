@@ -57,6 +57,7 @@ struct GigECameraTrait
     typedef int64_t AutoTargetBrightnessValueType;
     typedef Basler_UniversalCameraParams::ShutterModeEnums ShutterModeEnums;
     typedef Basler_UniversalCameraParams::UserOutputSelectorEnums UserOutputSelectorEnums;
+    typedef Basler_UniversalCameraParams::ChunkSelectorEnums ChunkSelectorEnums;
     typedef Basler_UniversalCameraParams::LineSelectorEnums LineSelectorEnums;
     typedef Basler_UniversalCameraParams::LineModeEnums LineModeEnums;
     typedef Basler_UniversalCameraParams::LineSourceEnums LineSourceEnums;

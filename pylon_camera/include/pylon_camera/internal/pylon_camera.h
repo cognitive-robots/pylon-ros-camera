@@ -35,6 +35,7 @@
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #pragma GCC diagnostic ignored "-Wliteral-suffix"
 
+#include <pylon/BaslerUniversalGrabResultPtr.h>
 #include <pylon/PylonIncludes.h>
 #include <GenApi/IEnumEntry.h>
 #include <string>
@@ -67,7 +68,7 @@ public:
 
     virtual bool startGrabbing(const PylonCameraParameter& parameters);
 
-    virtual bool grab(std::vector<uint8_t>& image);
+    virtual bool grab(std::vector<uint8_t>& image, ros::Time& stamp);
 
     virtual bool grab(uint8_t* image);
 
@@ -303,6 +304,8 @@ public:
 
     virtual int getChunkCounterValue();
 
+    virtual bool enableTimestampChunk();
+
     virtual std::string enablePTP(const bool& value) override;
 
 protected:
@@ -315,6 +318,7 @@ protected:
     typedef typename CameraTraitT::GainType GainType;
     typedef typename CameraTraitT::ShutterModeEnums ShutterModeEnums;
     typedef typename CameraTraitT::UserOutputSelectorEnums UserOutputSelectorEnums;
+    typedef typename CameraTraitT::ChunkSelectorEnums ChunkSelectorEnums;
     typedef typename CameraTraitT::SensorReadoutModeEnums SensorReadoutModeEnums;
     typedef typename CameraTraitT::AcquisitionStatusSelectorEnums AcquisitionStatusSelectorEnums;
     typedef typename CameraTraitT::TriggerSelectorEnums TriggerSelectorEnums;
@@ -354,7 +358,7 @@ protected:
     virtual bool setExtendedBrightness(const int& target_brightness,
                                        const float& current_brightness);
 
-    virtual bool grab(Pylon::CGrabResultPtr& grab_result);
+    virtual bool grab(Pylon::CBaslerUniversalGrabResultPtr& grab_result);
 
     virtual bool setupSequencer(const std::vector<float>& exposure_times,
                                 std::vector<float>& exposure_times_set);
